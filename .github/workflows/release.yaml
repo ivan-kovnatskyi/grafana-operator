@@ -88,13 +88,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to Quay.io
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
@@ -104,15 +97,10 @@ jobs:
         with:
           version: v0.15.1
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3.6.0
-        with:
-          cosign-release: "v2.2.2"
-
       - name: Prepare
         run: |
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
-          echo "REPOS"="quay.io/grafana-operator/grafana-operator" "ghcr.io/${{ github.repository }}" >> $GITHUB_ENV
+          echo "REPOS"="ghcr.io/${{ github.repository }}" >> $GITHUB_ENV
 
       - name: Build and push
         run: |
@@ -126,11 +114,4 @@ jobs:
             --image-label org.opencontainers.image.revision=${{ github.sha }} \
             --image-label org.opencontainers.image.version=${{ github.ref_name }} \
             --image-label org.opencontainers.image.created=${{ env.BUILD_DATE }}
-          done
-
-      - name: Sign Image
-        run: |
-          for i in ${{ env.REPOS }}
-          do
-            cosign sign -d -y $(cat ./image-digest-${i%.*})
           done
